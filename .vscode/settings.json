@@ -1,0 +1,12 @@
+{
+  "files.exclude": {
+    "**/.git": true,
+    "**/.hg": true,
+    "**/__pycache__": true
+  },
+  "python.analysis.typeCheckingMode": "standard",
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true
+  },
+}
