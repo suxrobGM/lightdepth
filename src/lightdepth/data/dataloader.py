@@ -30,9 +30,9 @@ def set_seed(seed: int) -> None:
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
-        # For deterministic behavior (may reduce performance)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+        # Enable cudnn benchmark for faster training (slight non-determinism)
+        torch.backends.cudnn.benchmark = True
+        torch.backends.cudnn.deterministic = False
 
 
 def create_dataloaders(
