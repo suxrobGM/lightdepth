@@ -4,6 +4,7 @@
 # Description: Visualization utilities for depth maps
 
 import numpy as np
+import torch
 from PIL import Image
 
 # Colormaps for depth visualization
@@ -123,15 +124,24 @@ def apply_colormap(values: np.ndarray, colormap_name: str = "plasma") -> np.ndar
 
 
 def save_depth_map(
-    depth_map: np.ndarray, output_path: str, colormap: str = "plasma"
+    depth_map: np.ndarray | torch.Tensor, output_path: str, colormap: str = "plasma"
 ) -> None:
     """Save depth map as colored image using built-in colormaps.
 
     Args:
-        depth_map: Depth map array
+        depth_map: Depth map array (NumPy array or PyTorch tensor)
         output_path: Path to save the output
         colormap: Colormap name (plasma, viridis, magma, inferno, gray)
     """
+    # Convert to NumPy if it's a tensor
+    if torch.is_tensor(depth_map):
+        depth_map = depth_map.detach().cpu().numpy()
+
+    # Squeeze out batch and channel dimensions if present
+    # Shape should be (H, W) for depth map
+    while depth_map.ndim > 2:
+        depth_map = depth_map.squeeze(0)
+
     # Normalize depth to 0-1
     depth_norm = (depth_map - depth_map.min()) / (
         depth_map.max() - depth_map.min() + 1e-6

@@ -8,6 +8,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+import argparse
+
 import torch
 from rich import print
 from torch.amp.autocast_mode import autocast
@@ -16,7 +18,7 @@ from tqdm import tqdm
 
 from lightdepth.data import create_dataloaders
 from lightdepth.models import LightDepthNet
-from lightdepth.utils import Config, compute_rmse
+from lightdepth.utils import Config, compute_all_metrics, save_depth_map
 
 
 def evaluate(
@@ -24,7 +26,7 @@ def evaluate(
     dataloader: DataLoader,
     device: torch.device,
     use_amp: bool = False,
-) -> float:
+) -> dict[str, float]:
     """Evaluate model on test set with optional mixed precision.
 
     Args:
@@ -34,10 +36,17 @@ def evaluate(
         use_amp: Whether to use automatic mixed precision (faster on CUDA)
 
     Returns:
-        Average RMSE across the test set
+        Dictionary containing average metrics across the test set
     """
     model.eval()
-    total_rmse = 0
+
+    # Initialize metric accumulators
+    metrics_sum = {
+        "rmse": 0.0,
+        "mae": 0.0,
+        "abs_rel": 0.0,
+        "sq_rel": 0.0,
+    }
 
     print("Evaluating...")
     with torch.no_grad():
@@ -53,20 +62,24 @@ def evaluate(
             if use_amp:
                 with autocast(device_type="cuda", dtype=torch.float16):
                     pred_depths = model(images)
-                    rmse = compute_rmse(pred_depths, depths, masks)
+                    batch_metrics = compute_all_metrics(pred_depths, depths, masks)
             else:
                 pred_depths = model(images)
-                rmse = compute_rmse(pred_depths, depths, masks)
+                batch_metrics = compute_all_metrics(pred_depths, depths, masks)
 
-            total_rmse += rmse.item()
+            # Accumulate metrics
+            for key in metrics_sum:
+                metrics_sum[key] += batch_metrics[key]
 
-    avg_rmse = total_rmse / len(dataloader)
-    return avg_rmse
+    # Compute averages
+    num_batches = len(dataloader)
+    avg_metrics = {key: value / num_batches for key, value in metrics_sum.items()}
+
+    return avg_metrics
 
 
 def main() -> None:
     """Main evaluation."""
-    import argparse
 
     parser = argparse.ArgumentParser(description="Evaluate LightDepth model")
     parser.add_argument(
@@ -106,14 +119,19 @@ def main() -> None:
 
     checkpoint = torch.load(args.checkpoint, map_location=device)
 
+    # Store checkpoint info
+    checkpoint_info = {}
+
     # Load model state dict
     if "model_state_dict" in checkpoint:
         model.load_state_dict(checkpoint["model_state_dict"])
         # Print checkpoint info if available
         if "epoch" in checkpoint:
-            print(f"Checkpoint epoch: {checkpoint['epoch']}")
+            checkpoint_info["epoch"] = checkpoint["epoch"]
+            print(f"Checkpoint epoch: {checkpoint["epoch"]}")
         if "val_rmse" in checkpoint:
-            print(f"Checkpoint validation RMSE: {checkpoint['val_rmse']:.4f}")
+            checkpoint_info["val_rmse"] = checkpoint["val_rmse"]
+            print(f"Checkpoint validation RMSE: {checkpoint["val_rmse"]:.4f}")
     else:
         model.load_state_dict(checkpoint)
 
@@ -133,10 +151,17 @@ def main() -> None:
     print(f"Total batches: {len(test_loader)}\n")
 
     # Evaluate with AMP if using CUDA
-    test_rmse = evaluate(model, test_loader, device, use_amp=use_cuda)
+    metrics = evaluate(model, test_loader, device, use_amp=use_cuda)
 
+    # Display results
     print(f"\n{"="*70}")
-    print(f"Test RMSE: {test_rmse:.4f}")
+    print("Evaluation Results")
+    print(f"{"="*70}")
+    print("\nError Metrics (lower is better):")
+    print(f"RMSE:       {metrics["rmse"]:.4f}")
+    print(f"MAE:        {metrics["mae"]:.4f}")
+    print(f"Abs Rel:    {metrics["abs_rel"]:.4f}")
+    print(f"Sq Rel:     {metrics["sq_rel"]:.4f}")
     print(f"{"="*70}\n")
 
 
