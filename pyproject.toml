@@ -22,24 +22,24 @@ dependencies = [
 [dependency-groups]
 dev = [
     "black>=25.9.0",
+    "isort>=7.0.0",
 ]
+
+
+[tool.pdm]
+distribution = true
 
 [tool.pdm.scripts]
 train = "python scripts/train.py --config config.yaml"
 eval = "python scripts/eval.py --checkpoint checkpoints/best_model.pth --config config.yaml"
-infer = "python scripts/infer.py --checkpoint checkpoints/best_model.pth --input image.jpg --output depth.png"
+infer = "python scripts/infer.py --checkpoint checkpoints/best_model.pth --input image.png --output depth.png"
 
 [tool.pdm.build]
 package-dir = "src"
 includes = ["lightdepth"]
 
-[build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
-
-[tool.pdm]
-distribution = true
-resolution.respect-source-order = true
+[tool.pdm.resolution]
+respect-source-order = true
 
 [[tool.pdm.source]]
 name = "pytorch"
@@ -50,3 +50,11 @@ verify_ssl = true
 name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
+
+[tool.isort]
+profile = "black"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+

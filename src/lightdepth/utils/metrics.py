@@ -7,9 +7,7 @@ import torch
 
 
 def compute_rmse(
-    pred: torch.Tensor, 
-    target: torch.Tensor, 
-    mask: torch.Tensor | None = None
+    pred: torch.Tensor, target: torch.Tensor, mask: torch.Tensor | None = None
 ) -> torch.Tensor:
     """
     Compute Root Mean Squared Error.

@@ -1,10 +1,11 @@
 """Simple transforms for depth estimation."""
 
+import random
+
+import numpy as np
 import torch
 import torchvision.transforms.functional as TF
 from PIL import Image
-import numpy as np
-import random
 
 
 class TrainTransform:
@@ -20,7 +21,9 @@ class TrainTransform:
         # Convert (height, width) to (width, height) for PIL
         self.img_size_pil = (img_size[1], img_size[0])
 
-    def __call__(self, image: Image.Image, depth: np.ndarray) -> tuple[torch.Tensor, torch.Tensor]:
+    def __call__(
+        self, image: Image.Image, depth: np.ndarray
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         # Resize (PIL expects width, height)
         image = image.resize(self.img_size_pil, Image.Resampling.BILINEAR)
         depth_img = Image.fromarray(depth)
@@ -46,7 +49,9 @@ class TrainTransform:
         image_tensor = TF.adjust_saturation(image_tensor, saturation_factor)
 
         # Normalize image (ImageNet stats)
-        image_tensor = TF.normalize(image_tensor, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        image_tensor = TF.normalize(
+            image_tensor, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+        )
 
         return image_tensor, depth_tensor
 
@@ -64,7 +69,9 @@ class ValTransform:
         # Convert (height, width) to (width, height) for PIL
         self.img_size_pil = (img_size[1], img_size[0])
 
-    def __call__(self, image: Image.Image, depth: np.ndarray) -> tuple[torch.Tensor, torch.Tensor]:
+    def __call__(
+        self, image: Image.Image, depth: np.ndarray
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         # Resize (PIL expects width, height)
         image = image.resize(self.img_size_pil, Image.Resampling.BILINEAR)
         depth_img = Image.fromarray(depth)
@@ -76,6 +83,8 @@ class ValTransform:
         tensor_depth = torch.from_numpy(depth).float().unsqueeze(0)
 
         # Normalize image
-        tensor_image = TF.normalize(tensor_image, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        tensor_image = TF.normalize(
+            tensor_image, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+        )
 
         return tensor_image, tensor_depth

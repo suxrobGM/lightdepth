@@ -19,10 +19,7 @@ class DepthLoss(nn.Module):
         self.l1_loss = nn.L1Loss()
 
     def forward(
-        self, 
-        pred: torch.Tensor, 
-        target: torch.Tensor, 
-        mask: torch.Tensor | None = None
+        self, pred: torch.Tensor, target: torch.Tensor, mask: torch.Tensor | None = None
     ) -> torch.Tensor:
         """
         Compute L1 loss on valid depth values.

@@ -6,22 +6,22 @@
 import torch
 import torch.nn as nn
 
-from lightdepth.models.encoder import ResNetEncoder
 from lightdepth.models.decoder import DepthDecoder
+from lightdepth.models.encoder import ResNetEncoder
 
 
 class LightDepthNet(nn.Module):
     """
     Complete lightweight depth estimation network.
-    
+
     Architecture consists of:
     1. Encoder: Pretrained backbone (ResNet/MobileNet/EfficientNet)
     2. Decoder: Upsampling path with skip connections
     3. Head: Final prediction layer
-    
+
     The model takes an RGB image as input and outputs a single-channel
     depth map at the same resolution.
-    
+
     Args:
         encoder_name (str): Encoder architecture name (default: 'resnet18')
         pretrained (bool): Use pretrained encoder weights (default: True)
@@ -30,19 +30,19 @@ class LightDepthNet(nn.Module):
         upsample_mode (str): Upsampling method (default: 'bilinear')
         skip_connections (bool): Use skip connections (default: True)
         use_attention (bool): Use attention in decoder (default: False)
-    
+
     Attributes:
         encoder (EncoderBackbone): Encoder backbone
         decoder (DepthDecoder): Decoder network
         total_params (int): Total number of parameters
         trainable_params (int): Number of trainable parameters
-    
+
     Methods:
         forward(x): Predict depth map from input RGB image
         get_model_info(): Return model architecture information
         load_pretrained(checkpoint_path): Load pretrained weights
         count_parameters(): Count total and trainable parameters
-    
+
     Example:
         >>> model = LightweightDepthNet(encoder_name='resnet18', pretrained=True)
         >>> image = torch.randn(2, 3, 480, 640)
@@ -52,7 +52,7 @@ class LightDepthNet(nn.Module):
         >>> info = model.get_model_info()
         >>> print(f"Total params: {info['total_params']:,}")
     """
-    
+
     def __init__(
         self,
         pretrained: bool = True,
@@ -79,19 +79,19 @@ class LightDepthNet(nn.Module):
             encoder_channels=encoder_channels,
             decoder_channels=decoder_channels,
         )
-    
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forward pass through the network.
-        
+
         Args:
             x (torch.Tensor): Input RGB image tensor of shape (B, 3, H, W)
                 Values should be normalized to [0, 1] or ImageNet stats
-        
+
         Returns:
             torch.Tensor: Predicted depth map of shape (B, 1, H, W)
                 Depth values are positive and typically in range [0, 10]
-        
+
         Example:
             >>> model = LightweightDepthNet()
             >>> image = torch.randn(4, 3, 480, 640)
@@ -100,16 +100,16 @@ class LightDepthNet(nn.Module):
         """
         # Extract multi-scale features from encoder
         features = self.encoder(x)
-        
+
         # Decode features to depth map
         depth = self.decoder(features)
-        
+
         return depth
-    
+
     def count_parameters(self) -> tuple[int, int]:
         """
         Count total and trainable parameters.
-    
+
         Returns:
             tuple: (total_params, trainable_params)
         """

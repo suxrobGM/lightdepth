@@ -9,9 +9,10 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+import argparse
+
 import numpy as np
 import torch
-import argparse
 from PIL import Image
 from rich import print
 
@@ -19,6 +20,7 @@ from lightdepth.models import LightDepthNet
 
 try:
     from matplotlib import cm  # type: ignore
+
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
@@ -26,8 +28,7 @@ except ImportError:
 
 
 def load_and_preprocess_image(
-    image_path: str, 
-    img_size: tuple[int, int] = (480, 640)
+    image_path: str, img_size: tuple[int, int] = (480, 640)
 ) -> torch.Tensor:
     """Load and preprocess image for inference."""
     # Load image
@@ -51,13 +52,13 @@ def load_and_preprocess_image(
 
 
 def save_depth_map(
-    depth_map: np.ndarray, 
-    output_path: str, 
-    colormap: str = "plasma"
+    depth_map: np.ndarray, output_path: str, colormap: str = "plasma"
 ) -> None:
     """Save depth map as colored image."""
     # Normalize depth to 0-1
-    depth_norm = (depth_map - depth_map.min()) / (depth_map.max() - depth_map.min() + 1e-6)
+    depth_norm = (depth_map - depth_map.min()) / (
+        depth_map.max() - depth_map.min() + 1e-6
+    )
 
     if not HAS_MATPLOTLIB or cm is None:
         # Fallback: save as grayscale
@@ -66,8 +67,8 @@ def save_depth_map(
         return
 
     # Apply colormap
-    cmap = cm.get_cmap(colormap)  # type: ignore
-    colored = cmap(depth_norm)  # type: ignore
+    cmap = cm.get_cmap(colormap)
+    colored = cmap(depth_norm)
     colored_np = np.asarray(colored)
 
     # Extract RGB (remove alpha channel)
@@ -80,14 +81,24 @@ def save_depth_map(
 
 def main() -> None:
     """Main inference."""
-    
 
     parser = argparse.ArgumentParser(description="Run inference with LightDepth")
-    parser.add_argument("--checkpoint", type=str, required=True, help="Path to model checkpoint")
+    parser.add_argument(
+        "--checkpoint", type=str, required=True, help="Path to model checkpoint"
+    )
     parser.add_argument("--input", type=str, required=True, help="Input image path")
-    parser.add_argument("--output", type=str, default="output_depth.png", help="Output depth image path")
-    parser.add_argument("--colormap", type=str, default="plasma", help="Colormap (plasma, viridis, magma, etc.)")
-    parser.add_argument("--device", type=str, default="cuda", help="Device (cuda or cpu)")
+    parser.add_argument(
+        "--output", type=str, default="output_depth.png", help="Output depth image path"
+    )
+    parser.add_argument(
+        "--colormap",
+        type=str,
+        default="plasma",
+        help="Colormap (plasma, viridis, magma, etc.)",
+    )
+    parser.add_argument(
+        "--device", type=str, default="cuda", help="Device (cuda or cpu)"
+    )
     args = parser.parse_args()
 
     # Device
@@ -109,7 +120,7 @@ def main() -> None:
 
     # Load and preprocess image
     print(f"Processing image: {args.input}")
-    image_tensor, original_image, original_size = load_and_preprocess_image(args.input)
+    image_tensor = load_and_preprocess_image(args.input)
     image_tensor = image_tensor.to(device)
 
     # Predict depth

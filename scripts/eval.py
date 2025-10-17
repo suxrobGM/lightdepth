@@ -9,12 +9,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import torch
+from rich import print
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from rich import print
 
-from lightdepth.models import LightDepthNet
 from lightdepth.data import create_dataloaders
+from lightdepth.models import LightDepthNet
 from lightdepth.utils import Config, compute_rmse
 
 
@@ -26,7 +26,11 @@ def evaluate(model: LightDepthNet, dataloader: DataLoader, device: torch.device)
     print("Evaluating...")
     with torch.no_grad():
         for images, depths, masks in tqdm(dataloader):
-            images, depths, masks = images.to(device), depths.to(device), masks.to(device)
+            images, depths, masks = (
+                images.to(device),
+                depths.to(device),
+                masks.to(device),
+            )
 
             # Forward
             pred_depths = model(images)
@@ -42,8 +46,12 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Evaluate LightDepth model")
-    parser.add_argument("--checkpoint", type=str, required=True, help="Path to checkpoint")
-    parser.add_argument("--config", type=str, default=None, help="Path to config YAML (optional)")
+    parser.add_argument(
+        "--checkpoint", type=str, required=True, help="Path to checkpoint"
+    )
+    parser.add_argument(
+        "--config", type=str, default=None, help="Path to config YAML (optional)"
+    )
     args = parser.parse_args()
 
     # Load config
