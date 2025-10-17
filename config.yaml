@@ -16,3 +16,5 @@ device: cuda         # Device: 'cuda' or 'cpu'
 
 # Resume training 
 resume_from: null  # Path to checkpoint to resume from, or null to start fresh
+
+checkpoint_frequency: 5  # Save checkpoint every 5 epochs (set to 0 to disable)

@@ -17,14 +17,7 @@ from PIL import Image
 from rich import print
 
 from lightdepth.models import LightDepthNet
-
-try:
-    from matplotlib import cm  # type: ignore
-
-    HAS_MATPLOTLIB = True
-except ImportError:
-    HAS_MATPLOTLIB = False
-    cm = None  # type: ignore
+from lightdepth.utils import save_depth_map
 
 
 def load_and_preprocess_image(
@@ -51,34 +44,6 @@ def load_and_preprocess_image(
     return image_tensor
 
 
-def save_depth_map(
-    depth_map: np.ndarray, output_path: str, colormap: str = "plasma"
-) -> None:
-    """Save depth map as colored image."""
-    # Normalize depth to 0-1
-    depth_norm = (depth_map - depth_map.min()) / (
-        depth_map.max() - depth_map.min() + 1e-6
-    )
-
-    if not HAS_MATPLOTLIB or cm is None:
-        # Fallback: save as grayscale
-        depth_gray = (depth_norm * 255).astype(np.uint8)
-        Image.fromarray(depth_gray).save(output_path)
-        return
-
-    # Apply colormap
-    cmap = cm.get_cmap(colormap)
-    colored = cmap(depth_norm)
-    colored_np = np.asarray(colored)
-
-    # Extract RGB (remove alpha channel)
-    colored_depth = colored_np[:, :, :3]
-
-    # Convert to uint8 and save
-    colored_depth = (colored_depth * 255).astype(np.uint8)
-    Image.fromarray(colored_depth).save(output_path)
-
-
 def main() -> None:
     """Main inference."""
 
@@ -94,7 +59,7 @@ def main() -> None:
         "--colormap",
         type=str,
         default="plasma",
-        help="Colormap (plasma, viridis, magma, etc.)",
+        help="Colormap to apply (plasma, viridis, magma, inferno, gray). Use 'gray' for grayscale output.",
     )
     parser.add_argument(
         "--device", type=str, default="cuda", help="Device (cuda or cpu)"
@@ -135,7 +100,7 @@ def main() -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     save_depth_map(depth_map, str(output_path), colormap=args.colormap)
-    print(f"Depth map saved to: {output_path}")
+    print(f"Depth map saved to: {output_path} (colormap: {args.colormap})")
 
     # Also save raw numpy array
     numpy_path = output_path.with_suffix(".npy")

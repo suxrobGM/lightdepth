@@ -11,7 +11,10 @@ import yaml
 
 @dataclass
 class Config:
-    """Simple training configuration."""
+    """
+    Configuration for training and evaluation.
+    Attributes can be loaded from or saved to a YAML file.
+    """
 
     # Data
     data_root: str = "data/nyu"
@@ -27,8 +30,11 @@ class Config:
     num_workers: int = 4
     device: str = "cuda"
 
-    # Resuming
-    resume_from: str | None = None  # Path to checkpoint to resume from
+    # Checkpointing
+    checkpoint_frequency: int = 5  # Save checkpoint every N epochs (0 = disabled)
+
+    # Resume training (optional)
+    resume_from: str | None = None
 
     @classmethod
     def from_yaml(cls, yaml_path: str) -> "Config":

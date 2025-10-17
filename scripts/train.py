@@ -112,6 +112,30 @@ def validate(
     return avg_loss, avg_rmse
 
 
+def find_latest_checkpoint() -> str | None:
+    """
+    Find the most recent checkpoint in the checkpoints directory.
+    Returns:
+        Path to the latest checkpoint file, or None if none found.
+    """
+    checkpoint_dir = Path("checkpoints")
+    if not checkpoint_dir.exists():
+        return None
+
+    # Look for checkpoint files
+    checkpoint_files = list(checkpoint_dir.glob("checkpoint_epoch_*.pth"))
+    if not checkpoint_files:
+        # Fall back to best_model.pth if no epoch checkpoints
+        best_model = checkpoint_dir / "best_model.pth"
+        if best_model.exists():
+            return str(best_model)
+        return None
+
+    # Find the checkpoint with the highest epoch number
+    latest_checkpoint = max(checkpoint_files, key=lambda p: int(p.stem.split("_")[-1]))
+    return str(latest_checkpoint)
+
+
 def main() -> None:
     """Main training loop with mixed precision, resume capability, and detailed logging."""
     import argparse
@@ -132,9 +156,16 @@ def main() -> None:
     else:
         config = Config()
 
-    # Override resume path if provided via command line
-    if args.resume:
-        config.resume_from = args.resume
+    can_resume = args.resume is not None or config.resume_from is not None
+
+    # Auto-resume: find latest checkpoint if no resume specified
+    if not can_resume:
+        latest = find_latest_checkpoint()
+        if latest:
+            print(f"Auto-resume: Found latest checkpoint: {latest}")
+            config.resume_from = latest
+        else:
+            print("Auto-resume: No checkpoint found, starting from scratch")
 
     # Device
     device = torch.device(config.device if torch.cuda.is_available() else "cpu")
@@ -157,23 +188,33 @@ def main() -> None:
     print(f"Num Workers: {config.num_workers}")
     print(f"Image Size: {config.img_height}x{config.img_width}")
     print(f"Data Root: {config.data_root}")
+
+    if config.checkpoint_frequency > 0:
+        print(f"Checkpoint Frequency: Every {config.checkpoint_frequency} epochs")
+    else:
+        print("Checkpoint Frequency: Disabled (only best model saved)")
+
     print("=" * 70)
 
     # Model
     print("\nCreating model...")
+
     model = LightDepthNet(pretrained=True).to(device)
     total, trainable = model.count_parameters()
+
     print(f"Total parameters: {total:,}")
     print(f"Trainable parameters: {trainable:,}")
 
     # Data
     print("\nLoading datasets...")
+
     train_loader, val_loader = create_dataloaders(
         data_root=config.data_root,
         batch_size=config.batch_size,
         num_workers=config.num_workers,
         img_size=(config.img_height, config.img_width),
     )
+
     print(f"Training batches: {len(train_loader)}")
     print(f"Validation batches: {len(val_loader)}")
     print(f"Total training samples: {len(train_loader) * config.batch_size}")
@@ -199,6 +240,7 @@ def main() -> None:
 
     if config.resume_from:
         print(f"\nResuming from checkpoint: {config.resume_from}")
+
         checkpoint = torch.load(config.resume_from, map_location=device)
         model.load_state_dict(checkpoint["model_state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
@@ -279,8 +321,8 @@ def main() -> None:
                 f"New best model, RMSE improved by {improvement:.4f} (now {val_rmse:.4f})"
             )
 
-        # Save latest checkpoint every 5 epochs
-        if epoch % 5 == 0:
+        # Save periodic checkpoint based on config frequency
+        if config.checkpoint_frequency > 0 and epoch % config.checkpoint_frequency == 0:
             Path("checkpoints").mkdir(exist_ok=True)
             checkpoint_data = {
                 "epoch": epoch,

@@ -53,6 +53,18 @@ class LightDepthNet(nn.Module):
         >>> print(f"Total params: {info['total_params']:,}")
     """
 
+    pretrained: bool
+    """Use pretrained weights for the encoder."""
+
+    decoder_channels: list[int]
+    """Channel configuration for the decoder."""
+
+    encoder: ResNetEncoder
+    """Encoder backbone for feature extraction."""
+
+    decoder: DepthDecoder
+    """Decoder network for depth map reconstruction."""
+
     def __init__(
         self,
         pretrained: bool = True,

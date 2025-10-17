@@ -32,6 +32,24 @@ class UpBlock(nn.Module):
         torch.Size([2, 256, 30, 40])
     """
 
+    conv1: nn.Conv2d
+    """First convolutional layer."""
+
+    conv2: nn.Conv2d
+    """Second convolutional layer."""
+
+    bn1: nn.BatchNorm2d
+    """Batch normalization after first conv."""
+
+    bn2: nn.BatchNorm2d
+    """Batch normalization after second conv."""
+
+    relu1: nn.ReLU
+    """ReLU activation after first conv."""
+
+    relu2: nn.ReLU
+    """ReLU activation after second conv."""
+
     def __init__(
         self,
         in_channels: int,
@@ -123,6 +141,21 @@ class DepthDecoder(nn.Module):
         >>> depth.shape
         torch.Size([2, 1, 480, 640])
     """
+
+    encoder_channels: list[int]
+    """Channel dimensions from encoder features."""
+
+    decoder_channels: list[int]
+    """Channel dimensions for each decoder stage."""
+
+    num_stages: int
+    """Number of upsampling stages."""
+
+    head: nn.Sequential
+    """Final prediction head with one more upsample."""
+
+    final_upsample: nn.Upsample
+    """Final upsampling layer to match input resolution."""
 
     def __init__(
         self,

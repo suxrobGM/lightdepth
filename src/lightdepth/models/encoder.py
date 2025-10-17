@@ -16,6 +16,24 @@ class ResNetEncoder(nn.Module):
     from intermediate layers for the decoder.
     """
 
+    layer0: nn.Sequential
+    """Initial convolutional layer and maxpool."""
+
+    layer1: nn.Sequential
+    """First residual block."""
+
+    layer2: nn.Sequential
+    """Second residual block."""
+
+    layer3: nn.Sequential
+    """Third residual block."""
+
+    layer4: nn.Sequential
+    """Fourth residual block."""
+
+    feature_channels: list[int]
+    """Number of channels at each feature level."""
+
     def __init__(self, pretrained=True) -> None:
         super().__init__()
 

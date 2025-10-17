@@ -19,10 +19,6 @@ def set_seed(seed: int) -> None:
 
     Args:
         seed (int): Random seed value
-
-    Example:
-        >>> set_seed(42)
-        >>> # All random operations will now be reproducible
     """
     random.seed(seed)
     np.random.seed(seed)
