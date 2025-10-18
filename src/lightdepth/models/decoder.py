@@ -10,45 +10,33 @@ import torch.nn.functional as F
 
 class UpBlock(nn.Module):
     """
-    Upsampling block with convolutions and normalization.
+    Upsampling block with skip connections.
 
-    This block upsamples the input feature map and applies convolutions
-    with batch normalization and ReLU activation. Optionally merges
-    skip connections from the encoder.
+    Bilinear upsample (2x) -> concat with skip -> conv -> BN -> ReLU -> conv -> BN -> ReLU
 
     Args:
-        in_channels (int): Number of input channels
-        out_channels (int): Number of output channels
-        skip_channels (int): Number of channels in skip connection (0 if no skip)
-        upsample_mode (str): Upsampling method ('bilinear', 'nearest', 'transpose')
-        use_attention (bool): Whether to include attention mechanism
-
-    Example:
-        >>> upblock = UpBlock(512, 256, skip_channels=256, upsample_mode="bilinear")
-        >>> x = torch.randn(2, 512, 15, 20)
-        >>> skip = torch.randn(2, 256, 30, 40)
-        >>> out = upblock(x, skip)
-        >>> out.shape
-        torch.Size([2, 256, 30, 40])
+        in_channels: Input channels
+        out_channels: Output channels
+        skip_channels: Skip connection channels (0 if no skip)
     """
 
     conv1: nn.Conv2d
-    """First convolutional layer."""
+    """First 3x3 conv (input+skip -> out_channels)."""
 
     conv2: nn.Conv2d
-    """Second convolutional layer."""
+    """Second 3x3 conv (out_channels -> out_channels)."""
 
     bn1: nn.BatchNorm2d
-    """Batch normalization after first conv."""
+    """Batch norm after conv1."""
 
     bn2: nn.BatchNorm2d
-    """Batch normalization after second conv."""
+    """Batch norm after conv2."""
 
     relu1: nn.ReLU
-    """ReLU activation after first conv."""
+    """ReLU after bn1."""
 
     relu2: nn.ReLU
-    """ReLU activation after second conv."""
+    """ReLU after bn2."""
 
     def __init__(
         self,
@@ -56,7 +44,13 @@ class UpBlock(nn.Module):
         out_channels: int,
         skip_channels: int = 0,
     ) -> None:
-        """Initialize upsampling block."""
+        """
+        Initialize upsampling block.
+        Args:
+            in_channels: Input channels
+            out_channels: Output channels
+            skip_channels: Skip connection channels (0 if no skip). Default: 0
+        """
         super().__init__()
 
         # Convolution after concatenating with skip connection
@@ -77,14 +71,14 @@ class UpBlock(nn.Module):
         self, x: torch.Tensor, skip: torch.Tensor | None = None
     ) -> torch.Tensor:
         """
-        Forward pass through upsampling block.
+        Forward pass.
 
         Args:
-            x (torch.Tensor): Input tensor (B, C_in, H, W)
-            skip (torch.Tensor, optional): Skip connection tensor (B, C_skip, H*2, W*2)
+            x: Input tensor (B, C_in, H, W)
+            skip: Optional skip connection (B, C_skip, H*2, W*2)
 
         Returns:
-            torch.Tensor: Upsampled and processed tensor (B, C_out, H*2, W*2)
+            Upsampled tensor (B, C_out, H*2, W*2)
         """
         # Upsample with bilinear interpolation
         x = F.interpolate(x, scale_factor=2, mode="bilinear", align_corners=False)
@@ -114,65 +108,44 @@ class DepthDecoder(nn.Module):
     """
     Decoder network for depth map reconstruction.
 
-    Takes multi-scale features from encoder and progressively upsamples
-    to produce final depth map at original resolution.
+    Progressively upsamples encoder features through multiple UpBlocks with skip connections,
+    then produces final depth prediction.
 
-    Architecture:
-    - Progressive upsampling through multiple UpBlocks
-    - Skip connections from encoder features
-    - Final prediction head
-
-    Attributes:
-        decoder_channels (list): Channel dimensions for each decoder stage
-        encoder_channels (list): Channel dimensions from encoder features
-        upsample_mode (str): Upsampling method to use
-        skip_connections (bool): Use skip connections from encoder
-        num_stages (int): Number of upsampling stages
-
-    Methods:
-        forward(encoder_features): Decode features to depth map
-
-    Example:
-        >>> encoder_channels = [64, 64, 128, 256, 512]
-        >>> decoder = DepthDecoder(encoder_channels, decoder_channels=[256, 128, 64, 32])
-        >>> features = [torch.randn(2, c, 480//(2**i), 640//(2**i))
-        ...             for i, c in enumerate(encoder_channels)]
-        >>> depth = decoder(features)
-        >>> depth.shape
-        torch.Size([2, 1, 480, 640])
+    Args:
+        encoder_channels: Channel dimensions from encoder features
+        decoder_channels: Channel dimensions for decoder stages
     """
 
     encoder_channels: list[int]
-    """Channel dimensions from encoder features."""
+    """Encoder feature channels: [64, 64, 128, 256, 512]."""
 
     decoder_channels: list[int]
-    """Channel dimensions for each decoder stage."""
+    """Decoder stage channels (default: [256, 128, 64, 32])."""
 
     num_stages: int
-    """Number of upsampling stages."""
+    """Number of UpBlock stages."""
+
+    stages: nn.ModuleList
+    """List of UpBlock modules."""
 
     head: nn.Sequential
-    """Final prediction head with one more upsample."""
+    """Final conv layers (32 -> 1 channel depth map)."""
 
     final_upsample: nn.Upsample
-    """Final upsampling layer to match input resolution."""
+    """Final 2x bilinear upsample to input resolution."""
 
     def __init__(
         self,
         encoder_channels: list[int],
-        decoder_channels: list[int] | None = None,
+        decoder_channels: list[int] = [256, 128, 64, 32],
     ) -> None:
         """
-        Initialize decoder network.
-
+        Initialize decoder.
         Args:
-            encoder_channels (list): Channel dimensions from encoder features
-            decoder_channels (list): Channel dimensions for decoder stages
+            encoder_channels: Channel dimensions from encoder features
+            decoder_channels: Channel dimensions for decoder stages (default: [256, 128, 64, 32])
         """
         super().__init__()
-
-        if decoder_channels is None:
-            decoder_channels = [256, 128, 64, 32]
 
         self.encoder_channels = encoder_channels
         self.decoder_channels = decoder_channels
@@ -218,14 +191,10 @@ class DepthDecoder(nn.Module):
         Decode encoder features to depth map.
 
         Args:
-            encoder_features (List[torch.Tensor]): Multi-scale features from encoder,
-                ordered from lowest to highest resolution
+            encoder_features: Multi-scale features from encoder (low to high resolution)
 
         Returns:
-            torch.Tensor: Predicted depth map (B, 1, H, W)
-
-        Raises:
-            ValueError: If encoder_features length does not match expected
+            Predicted depth map (B, 1, H, W)
         """
         if len(encoder_features) != len(self.encoder_channels):
             raise ValueError(
@@ -256,7 +225,7 @@ class DepthDecoder(nn.Module):
         return depth
 
     def __repr__(self) -> str:
-        """String representation of decoder."""
+        """String representation."""
         return (
             f"DepthDecoder(\\n"
             f"  encoder_channels={self.encoder_channels},\\n"

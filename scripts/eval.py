@@ -2,6 +2,10 @@
 # Author: Sukhrobbek Ilyosbekov
 # Date: 2025-10-16
 # Description: Evaluation script for LightDepth model
+# Evaluate on NYU Depth v2 test set with optional mixed precision
+# Parameters:
+#   --checkpoint: Path to model checkpoint
+#   --config: Optional path to config YAML file
 
 import sys
 from pathlib import Path
@@ -17,12 +21,12 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from lightdepth.data import create_dataloaders
-from lightdepth.models import LightDepthNet
+from lightdepth.models import LightDepth
 from lightdepth.utils import Config, compute_all_metrics, save_depth_map
 
 
 def evaluate(
-    model: LightDepthNet,
+    model: LightDepth,
     dataloader: DataLoader,
     device: torch.device,
     use_amp: bool = False,
@@ -115,7 +119,7 @@ def main() -> None:
 
     # Load model
     print(f"\nLoading model from {args.checkpoint}")
-    model = LightDepthNet(pretrained=False).to(device)
+    model = LightDepth(pretrained=False).to(device)
 
     checkpoint = torch.load(args.checkpoint, map_location=device)
 

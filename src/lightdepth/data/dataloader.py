@@ -18,7 +18,7 @@ def set_seed(seed: int) -> None:
     Set random seeds for reproducibility.
 
     Args:
-        seed (int): Random seed value
+        seed: Random seed value
     """
     random.seed(seed)
     np.random.seed(seed)
@@ -44,65 +44,22 @@ def create_dataloaders(
     seed: int = 42,
 ) -> tuple[DataLoader, DataLoader]:
     """
-    Create train and validation dataloaders with appropriate transforms.
-
-    This function handles:
-    - Loading training and validation datasets
-    - Applying appropriate transforms (augmentation for train, none for val)
-    - Creating dataloaders with optimal settings
-    - Setting random seeds for reproducibility
-    - Supporting subset sampling for quick experiments
+    Create train and validation dataloaders.
 
     Args:
-        data_root (str): Path to dataset root directory (e.g., "data/nyu")
-        batch_size (int): Batch size for both dataloaders (default: 16)
-        num_workers (int): Number of dataloader workers for parallel loading (default: 4)
-        img_size (tuple): Target image size as (height, width) (default: (480, 640))
-        train_size (int, optional): Limit training set size (None = use all)
-        val_size (int, optional): Limit validation set size (None = use all)
-        shuffle (bool): Whether to shuffle training data (default: True)
-        pin_memory (bool): Pin memory for faster GPU transfer (default: True)
-        seed (int): Random seed for reproducibility (default: 42)
+        data_root: Path to dataset root directory
+        batch_size: Batch size for both dataloaders
+        num_workers: Number of parallel data loading workers
+        img_size: Target image size as (height, width)
+        train_size: Optional limit on training set size
+        val_size: Optional limit on validation set size
+        shuffle: Whether to shuffle training data
+        pin_memory: Pin memory for faster GPU transfer
+        seed: Random seed for reproducibility
 
     Returns:
-        Tuple[DataLoader, DataLoader]: (train_loader, val_loader)
-            - train_loader: DataLoader for training with augmentation
-            - val_loader: DataLoader for validation without augmentation
-
-    Raises:
-        FileNotFoundError: If data_root directory does not exist
-        ValueError: If batch_size <= 0 or num_workers < 0
-
-    Example:
-        >>> # Standard usage
-        >>> train_loader, val_loader = create_dataloaders(
-        ...     data_root="data/nyu",
-        ...     batch_size=16,
-        ...     num_workers=4
-        ... )
-        >>> print(f"Train batches: {len(train_loader)}, Val batches: {len(val_loader)}")
-
-        >>> # Quick experiment with subset
-        >>> train_loader, val_loader = create_dataloaders(
-        ...     data_root="data/nyu",
-        ...     batch_size=8,
-        ...     train_size=100,
-        ...     val_size=50
-        ... )
-
-        >>> # Custom image size
-        >>> train_loader, val_loader = create_dataloaders(
-        ...     data_root="data/nyu",
-        ...     img_size=(384, 512),
-        ...     batch_size=32
-        ... )
-
-    Note:
-        - Training data is shuffled by default for better generalization
-        - Validation data is not shuffled to ensure consistent evaluation
-        - pin_memory=True speeds up CPU->GPU transfer but uses more RAM
-        - num_workers=0 uses main process (useful for debugging)
-        - Higher num_workers can speed up data loading but uses more CPU/RAM
+        train_loader: DataLoader with augmentation
+        val_loader: DataLoader without augmentation
     """
     # Validate arguments
     if batch_size <= 0:

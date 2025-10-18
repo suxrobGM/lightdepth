@@ -1,7 +1,12 @@
 # CS 7180 Advanced Perception
 # Author: Sukhrobbek Ilyosbekov
 # Date: 2025-10-16
-# Description: Inference script for LightDepth model
+# Description: Inference script for LightDepth model on single images
+# Parameters:
+#   --checkpoint: Path to model checkpoint
+#   --input: Path to input image
+#   --output: Path to save output depth image Default: output/depth.png
+#   --colormap: Colormap to apply (plasma, viridis, magma, inferno, gray) for depth visualization. Default: plasma
 
 import sys
 from pathlib import Path
@@ -16,7 +21,7 @@ import torch
 from PIL import Image
 from rich import print
 
-from lightdepth.models import LightDepthNet
+from lightdepth.models import LightDepth
 from lightdepth.utils import save_depth_map
 
 
@@ -34,8 +39,12 @@ def load_and_preprocess_image(
     image_np = np.array(image).astype(np.float32) / 255.0
     image_np = image_np.transpose(2, 0, 1)
 
-    # Normalize
+    # Normalize using ImageNet statistics
+    # These are the mean RGB values across millions of ImageNet images
+    # [Red: 0.485, Green: 0.456, Blue: 0.406] - ImageNet channel means
     mean = np.array([0.485, 0.456, 0.406]).reshape(3, 1, 1)
+
+    # [Red: 0.229, Green: 0.224, Blue: 0.225] - ImageNet channel standard deviations
     std = np.array([0.229, 0.224, 0.225]).reshape(3, 1, 1)
     image_np = (image_np - mean) / std
 
@@ -53,7 +62,7 @@ def main() -> None:
     )
     parser.add_argument("--input", type=str, required=True, help="Input image path")
     parser.add_argument(
-        "--output", type=str, default="output_depth.png", help="Output depth image path"
+        "--output", type=str, default="output/depth.png", help="Output depth image path"
     )
     parser.add_argument(
         "--colormap",
@@ -61,18 +70,15 @@ def main() -> None:
         default="plasma",
         help="Colormap to apply (plasma, viridis, magma, inferno, gray). Use 'gray' for grayscale output.",
     )
-    parser.add_argument(
-        "--device", type=str, default="cuda", help="Device (cuda or cpu)"
-    )
     args = parser.parse_args()
 
     # Device
-    device = torch.device(args.device if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
     # Load model
     print(f"Loading model from {args.checkpoint}")
-    model = LightDepthNet(pretrained=False).to(device)
+    model = LightDepth(pretrained=False).to(device)
 
     checkpoint = torch.load(args.checkpoint, map_location=device)
     if "model_state_dict" in checkpoint:

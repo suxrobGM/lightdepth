@@ -1,7 +1,13 @@
 # CS 7180 Advanced Perception
 # Author: Sukhrobbek Ilyosbekov
 # Date: 2025-10-17
-# Description: Compare LightDepth model with Depth Anything V2
+# Description: Compare LightDepth model with Depth Anything V2 on NYU Depth v2 test set
+# Parameters:
+#   --lightdepth-checkpoint: Path to LightDepth model checkpoint
+#   --config: Optional path to config YAML file. If not provided, defaults are used.
+#   --dav2-model: Name of Depth Anything V2 model variant. Default: "depth-anything/Depth-Anything-V2-Small-hf"
+#   --output: Path to save comparison results JSON. Default: "output/comparison_results.json"
+#   --visualize: Number of samples to visualize (0 to disable). Default: 0
 
 import sys
 from pathlib import Path
@@ -23,12 +29,12 @@ from tqdm import tqdm
 from transformers import AutoImageProcessor, AutoModelForDepthEstimation
 
 from lightdepth.data import create_dataloaders
-from lightdepth.models import LightDepthNet
+from lightdepth.models import LightDepth
 from lightdepth.utils import Config, compute_all_metrics, save_depth_map
 
 
 def evaluate_lightdepth(
-    model: LightDepthNet,
+    model: LightDepth,
     dataloader: DataLoader,
     device: torch.device,
     use_amp: bool = False,
@@ -191,7 +197,7 @@ def denormalize_image(tensor: torch.Tensor) -> torch.Tensor:
 
 
 def visualize_comparison(
-    lightdepth_model: LightDepthNet,
+    lightdepth_model: LightDepth,
     dav2_model,
     dav2_processor,
     dataloader: DataLoader,
@@ -331,7 +337,7 @@ def main() -> None:
 
     # Load LightDepth model
     print("\n[yellow]Loading LightDepth model...[/yellow]")
-    lightdepth_model = LightDepthNet(pretrained=False).to(device)
+    lightdepth_model = LightDepth(pretrained=False).to(device)
     checkpoint = torch.load(args.lightdepth_checkpoint, map_location=device)
 
     checkpoint_info = {}

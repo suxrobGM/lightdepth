@@ -1,7 +1,10 @@
 # CS 7180 Advanced Perception
 # Author: Sukhrobbek Ilyosbekov
 # Date: 2025-10-16
-# Description: Training script for LightDepth model
+# Description: Training script for LightDepth model with mixed precision and resume capability on the NYU Depth v2 dataset
+# Parameters:
+#   --config: Path to config YAML file (optional)
+#   --resume: Path to checkpoint to resume from (optional)
 
 import sys
 from pathlib import Path
@@ -18,12 +21,12 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from lightdepth.data import create_dataloaders
-from lightdepth.models import LightDepthNet
+from lightdepth.models import LightDepth
 from lightdepth.utils import Config, DepthLoss, compute_rmse
 
 
 def train_epoch(
-    model: LightDepthNet,
+    model: LightDepth,
     dataloader: DataLoader,
     criterion: DepthLoss,
     optimizer: optim.Optimizer,
@@ -69,7 +72,7 @@ def train_epoch(
 
 
 def validate(
-    model: LightDepthNet,
+    model: LightDepth,
     dataloader: DataLoader,
     criterion: DepthLoss,
     device: torch.device,
@@ -199,7 +202,7 @@ def main() -> None:
     # Model
     print("\nCreating model...")
 
-    model = LightDepthNet(pretrained=True).to(device)
+    model = LightDepth(pretrained=True).to(device)
     total, trainable = model.count_parameters()
 
     print(f"Total parameters: {total:,}")

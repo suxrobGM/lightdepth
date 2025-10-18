@@ -2,8 +2,8 @@
 
 # Data settings
 data_root: data/nyu  # Path to NYU Depth v2 dataset
-img_height: 480      # Image height (pixels)
-img_width: 640       # Image width (pixels)
+img_height: 480      # Output and preprocessed image height (pixels)
+img_width: 640       # Output and preprocessed image width (pixels)
 
 # Training settings
 batch_size: 32       # Batch size for training

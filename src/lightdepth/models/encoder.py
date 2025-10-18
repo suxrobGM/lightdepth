@@ -10,17 +10,16 @@ from torchvision.models import ResNet18_Weights, resnet18
 
 class ResNetEncoder(nn.Module):
     """
-    ResNet18 encoder that extracts multi-scale features.
+    ResNet18 encoder for multi-scale feature extraction.
 
-    Uses pretrained ResNet18 from torchvision and extracts features
-    from intermediate layers for the decoder.
+    Extracts features at 5 scales from pretrained ResNet18 for decoder skip connections.
     """
 
     layer0: nn.Sequential
-    """Initial convolutional layer and maxpool."""
+    """Initial conv layer (conv1 + bn1 + relu)."""
 
     layer1: nn.Sequential
-    """First residual block."""
+    """First residual block with maxpool."""
 
     layer2: nn.Sequential
     """Second residual block."""
@@ -32,9 +31,14 @@ class ResNetEncoder(nn.Module):
     """Fourth residual block."""
 
     feature_channels: list[int]
-    """Number of channels at each feature level."""
+    """Output channels at each layer: [64, 64, 128, 256, 512]."""
 
     def __init__(self, pretrained=True) -> None:
+        """
+        Initialize ResNet18 encoder.
+        Args:
+            pretrained: Whether to use ImageNet pretrained weights. Default: True
+        """
         super().__init__()
 
         # Load pretrained ResNet18
@@ -56,10 +60,10 @@ class ResNetEncoder(nn.Module):
         Extract multi-scale features.
 
         Args:
-            x: Input image (B, 3, H, W)
+            x: Input RGB image (B, 3, H, W)
 
         Returns:
-            List of features at different scales
+            List of 5 feature maps at different scales [64, 64, 128, 256, 512] channels
         """
         features = []
         x = self.layer0(x)

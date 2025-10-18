@@ -15,45 +15,21 @@ from torch.utils.data import Dataset
 
 class NYUDepthV2Dataset(Dataset):
     """
-    NYU-Depth-v2 dataset for indoor depth estimation.
+    NYU-Depth-v2 indoor depth estimation dataset.
 
-    Supports directory format with preprocessed RGB-D pairs organized as:
-    - nyu2_train/ and nyu2_test/ folders with images
-    - nyu2_train.csv and nyu2_test.csv with file paths
-
-    Dataset contains 1449 RGB-D pairs from 464 indoor scenes.
-    Resolution: 640x480 pixels
-    Depth range: 0.5m to 10m (typical indoor scenes)
+    Contains 1449 RGB-D pairs from 464 indoor scenes at 640x480 resolution.
+    Loads from CSV files or directory structure (nyu2_train/, nyu2_test/).
 
     Args:
-        root_dir (str): Path to dataset root directory (e.g., 'data/nyu')
-        split (str): Dataset split - 'train' or 'test' (default: 'train')
-        transform (callable, optional): Transform to apply to RGB images
-        target_transform (callable, optional): Transform to apply to depth maps
-        subset_size (int, optional): Limit dataset size for quick experiments
+        root_dir: Path to dataset root directory
+        split: 'train' or 'test'
+        transform: Optional transform for RGB images and depth maps
+        subset_size: Optional limit on dataset size
 
-    Attributes:
-        root_dir (Path): Root directory path
-        split (str): Current data split
-        image_paths (list): List of RGB image file paths
-        depth_paths (list): List of depth map file paths
-
-    Methods:
-        __len__(): Return total number of samples in dataset
-        __getitem__(idx): Return (image, depth, mask) tuple for given index
-        get_statistics(): Compute and return dataset depth statistics
-
-    Example:
-        >>> dataset = NYUDepthV2Dataset(root_dir='data/nyu', split='train')
-        >>> print(f"Dataset size: {len(dataset)}")
-        >>> image, depth, mask = dataset[0]
-        >>> print(f"Image shape: {image.shape}, Depth range: [{depth[mask].min():.2f}, {depth[mask].max():.2f}]")
-
-    Note:
-        - Images are returned as PIL Images (can be tensors after transform)
-        - Depth maps are numpy arrays in meters
-        - Masks indicate valid depth pixels (True = valid, False = invalid)
-        - Invalid depth values (0 or > 10m) are automatically masked
+    Returns (via __getitem__):
+        image: RGB image tensor (after transform)
+        depth: Depth map tensor in meters
+        mask: Valid depth mask (True = valid pixel)
     """
 
     def __init__(
@@ -66,7 +42,14 @@ class NYUDepthV2Dataset(Dataset):
         ) = None,
         subset_size: int | None = None,
     ) -> None:
-        """Initialize NYU-Depth-v2 dataset."""
+        """
+        Initialize NYU-Depth-v2 dataset.
+        Args:
+            root_dir: Path to dataset root directory
+            split: 'train' or 'test'. Default: 'train'
+            transform: Optional transform for RGB images and depth maps
+            subset_size: Optional limit on dataset size
+        """
         super().__init__()
 
         self.root_dir = Path(root_dir)
@@ -100,7 +83,7 @@ class NYUDepthV2Dataset(Dataset):
             )
 
     def _load_file_paths(self) -> None:
-        """Load image and depth file paths from CSV or directory structure."""
+        """Load image and depth paths from CSV or directory."""
         csv_path = self.root_dir / f"nyu2_{self.split}.csv"
 
         if csv_path.exists():
@@ -136,25 +119,20 @@ class NYUDepthV2Dataset(Dataset):
                     self.depth_paths.append(depth_path)
 
     def __len__(self) -> int:
-        """Return the total number of samples in the dataset."""
+        """Return total number of samples."""
         return len(self.image_paths)
 
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
-        Get dataset sample at given index.
+        Get sample at index.
 
         Args:
-            idx (int): Sample index
+            idx: Sample index
 
         Returns:
-            Tuple containing:
-                - image (Tensor): RGB image, shape depends on transforms
-                - depth (Tensor): Depth map, shape depends on transforms
-                - mask (Tensor): Valid depth mask, same shape as depth
-
-        Raises:
-            IndexError: If idx is out of range
-            IOError: If image or depth file cannot be loaded
+            image: RGB image tensor
+            depth: Depth map tensor in meters
+            mask: Valid depth mask tensor
         """
         if idx < 0 or idx >= len(self):
             raise IndexError(f"Index {idx} out of range [0, {len(self)})")
@@ -192,54 +170,8 @@ class NYUDepthV2Dataset(Dataset):
 
         return transformed_image, transformed_depth, mask
 
-    def get_statistics(self) -> dict:
-        """
-        Compute dataset statistics.
-
-        Returns:
-            dict: Dictionary containing depth statistics:
-                - min_depth: Minimum valid depth value
-                - max_depth: Maximum valid depth value
-                - mean_depth: Mean valid depth value
-                - num_samples: Total number of samples
-
-        Example:
-            >>> dataset = NYUDepthV2Dataset('data/nyu', 'train')
-            >>> stats = dataset.get_statistics()
-            >>> print(f"Depth range: [{stats['min_depth']:.2f}, {stats['max_depth']:.2f}]m")
-        """
-        depths = []
-
-        for idx in range(min(len(self), 100)):  # Sample first 100 for speed
-            try:
-                depth = np.array(Image.open(self.depth_paths[idx]), dtype=np.float32)
-                if depth.max() > 100:
-                    depth = depth / 1000.0
-                valid_depth = depth[(depth > 0.01) & (depth < 10.0)]
-                if len(valid_depth) > 0:
-                    depths.append(valid_depth)
-            except:
-                continue
-
-        if len(depths) == 0:
-            return {
-                "min_depth": 0.0,
-                "max_depth": 0.0,
-                "mean_depth": 0.0,
-                "num_samples": len(self),
-            }
-
-        all_depths = np.concatenate(depths)
-
-        return {
-            "min_depth": float(np.min(all_depths)),
-            "max_depth": float(np.max(all_depths)),
-            "mean_depth": float(np.mean(all_depths)),
-            "num_samples": len(self),
-        }
-
     def __repr__(self) -> str:
-        """String representation of dataset."""
+        """String representation."""
         return (
             f"NYUDepthV2Dataset(\\n"
             f"  split='{self.split}',\\n"

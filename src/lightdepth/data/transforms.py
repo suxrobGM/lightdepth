@@ -1,4 +1,7 @@
-"""Simple transforms for depth estimation."""
+# CS 7180 Advanced Perception
+# Author: Sukhrobbek Ilyosbekov
+# Date: 2025-10-16
+# Description: Data transforms for depth estimation
 
 import random
 
@@ -9,14 +12,12 @@ from PIL import Image
 
 
 class TrainTransform:
-    """Training transforms with augmentation (picklable for multiprocessing)."""
+    """Training transforms with augmentation (resize, flip, color jitter, normalize)."""
 
-    def __init__(self, img_size=(480, 640)):
+    def __init__(self, img_size=(480, 640)) -> None:
         """
-        Initialize transform.
-
         Args:
-            img_size: Target size as (height, width)
+            img_size: Target size as (height, width). Default: (480, 640)
         """
         # Convert (height, width) to (width, height) for PIL
         self.img_size_pil = (img_size[1], img_size[0])
@@ -57,14 +58,12 @@ class TrainTransform:
 
 
 class ValTransform:
-    """Validation transforms without augmentation (picklable for multiprocessing)."""
+    """Validation transforms without augmentation (resize and normalize only)."""
 
-    def __init__(self, img_size=(480, 640)):
+    def __init__(self, img_size=(480, 640)) -> None:
         """
-        Initialize transform.
-
         Args:
-            img_size: Target size as (height, width)
+            img_size: Target size as (height, width). Default: (480, 640)
         """
         # Convert (height, width) to (width, height) for PIL
         self.img_size_pil = (img_size[1], img_size[0])
@@ -82,7 +81,7 @@ class ValTransform:
         tensor_image = TF.to_tensor(image)
         tensor_depth = torch.from_numpy(depth).float().unsqueeze(0)
 
-        # Normalize image
+        # Normalize image, using ImageNet stats such as mean and std
         tensor_image = TF.normalize(
             tensor_image, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
         )

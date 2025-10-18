@@ -18,8 +18,8 @@ class Config:
 
     # Data
     data_root: str = "data/nyu"
-    img_height: int = 480
-    img_width: int = 640
+    img_height: int = 480  # Output and preprocessed image height
+    img_width: int = 640  # Output and preprocessed image width
 
     # Training
     batch_size: int = 16
@@ -27,7 +27,7 @@ class Config:
     learning_rate: float = 1e-4
 
     # System
-    num_workers: int = 4
+    num_workers: int = 4  # DataLoader workers for parallel data loading
     device: str = "cuda"
 
     # Checkpointing
