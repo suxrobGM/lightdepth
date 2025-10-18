@@ -1,6 +1,6 @@
 # LightDepth - Lightweight Depth Estimation
 
-LightDepth is a lightweight monocular depth estimation model, built with a ResNet18 encoder-decoder architecture, it demonstrates core concepts of depth estimation from single RGB images without the complexity of production-scale models. The project provides a clear, straightforward implementation ideal for learning about feature extraction, multi-scale processing, and depth prediction in computer vision.
+LightDepth is a lightweight monocular depth estimation model, built with a ResNet18 encoder-decoder architecture, it demonstrates core concepts of depth estimation from single RGB images without the complexity of production-scale models. The project provides a clear, straightforward implementation ideal for learning about feature extraction, multi-scale processing, and depth prediction in computer vision. Compared project performance with [Depth Anything V2](https://huggingface.co/depth-anything/Depth-Anything-V2) on the NYU Depth V2 test dataset, demonstrating relatively competitive results with significantly fewer parameters and faster inference times.
 
 ## Features
 
@@ -9,7 +9,7 @@ LightDepth is a lightweight monocular depth estimation model, built with a ResNe
 - **L1 Loss**: Simple and effective loss function.
 - **Multiple Metrics**: RMSE, MAE, AbsRel, and SqRel metrics.
 - **Fast Inference**: 72% faster than Depth Anything V2.
-- **Compact Model**: 42% fewer parameters than Depth Anything V2 small (14.3M vs 24.8M).
+- **Compact Model**: 42% fewer parameters than [Depth Anything V2 small](https://huggingface.co/depth-anything/Depth-Anything-V2-Small) (14.3M vs 24.8M).
 
 ## Dataset
 
