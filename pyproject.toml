@@ -1,7 +1,7 @@
 [project]
 name = "lightdepth"
 version = "0.1.0"
-description = "Default template for PDM package"
+description = "LightDepth: Lightweight Monocular Depth Estimation Model"
 authors = [
     {name = "Sukhrob Ilyosbekov", email = "suxrobgm@gmail.com"},
 ]
