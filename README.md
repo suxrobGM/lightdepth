@@ -11,27 +11,6 @@ LightDepth is a lightweight monocular depth estimation model, built with a ResNe
 - **Fast Inference**: 72% faster than Depth Anything V2.
 - **Compact Model**: 42% fewer parameters than Depth Anything V2 small (14.3M vs 24.8M).
 
-## Requirements
-
-- Python 3.14
-- PyTorch
-- CUDA-capable GPU (recommended)
-
-## Installation
-
-Install dependencies either via PDM or pip:
-
-```bash
-# Using PDM (Recommended)
-pdm install
-
-# Or using pip
-pip install -r requirements.txt
-```
-
-> [!NOTE]
-> You can install `pdm` via `pip install pdm` if you don't have it already.
-
 ## Dataset
 
 Download the NYU Depth v2 dataset from [Kaggle](https://www.kaggle.com/datasets/soumikrakshit/nyu-depth-v2).
@@ -67,7 +46,89 @@ Download the trained model checkpoint from [Google Drive](https://drive.google.c
 
 For detailed methodology, experiments, and analysis, see: [Project Report](docs/project-report.pdf)
 
+## Model Architecture
+
+- **Encoder**: ResNet18 (pretrained on ImageNet)
+- **Decoder**: 4-stage upsampling with skip connections
+- **Channels**: [64, 64, 128, 256, 512] → [256, 128, 64, 32] → 1
+- **Loss**: L1 (Mean Absolute Error)
+- **Metrics**: RMSE, MAE, AbsRel, SqRel
+
+[![Model architecture](docs/images/model_architecture.png)](docs/images/model_architecture.png)
+
+## Results
+
+### Quantitative Comparison
+
+LightDepth vs Depth Anything V2 on NYU Depth v2 test set:
+
+| Metric | LightDepth | Depth Anything V2 | Winner |
+|--------|------------|-------------------|--------|
+| **Parameters** | 14,330,369 | 24,785,089 | **LightDepth (42% fewer)** |
+| **RMSE** ↓ | 2.9477 | 2.8074 | Depth Anything V2 (5.0%) |
+| **MAE** ↓ | 2.6758 | 2.2360 | Depth Anything V2 (19.7%) |
+| **Absolute Relative Error** ↓ | 0.9724 | 1.0272 | **LightDepth (5.3%)** |
+| **Squared Relative Error** ↓ | 2.6063 | 3.7849 | **LightDepth (31.1%)** |
+| **Total Inference Time** ↓ | 5 seconds | 18 seconds | **LightDepth (72.2% faster)** |
+
+**Key Findings:**
+
+- LightDepth achieves competitive performance with 42% fewer parameters
+- Significantly faster inference time (72% improvement)
+- Better performance on relative error metrics
+- Slight trade-off in absolute error metrics (RMSE, MAE)
+
+### Qualitative Results
+
+Sample depth predictions on NYU Depth V2 test set:
+
+#### Sample 1
+
+| Input | Ground Truth | LightDepth | Depth Anything V2 |
+|-------|--------------|------------|-------------------|
+| ![Input](docs/images/samples/sample_0000_input.png) | ![GT](docs/images/samples/sample_0000_gt.png) | ![LightDepth](docs/images/samples/sample_0000_lightdepth.png) | ![DAv2](docs/images/samples/sample_0000_dav2.png) |
+
+#### Sample 2
+
+| Input | Ground Truth | LightDepth | Depth Anything V2 |
+|-------|--------------|------------|-------------------|
+| ![Input](docs/images/samples/sample_0001_input.png) | ![GT](docs/images/samples/sample_0001_gt.png) | ![LightDepth](docs/images/samples/sample_0001_lightdepth.png) | ![DAv2](docs/images/samples/sample_0001_dav2.png) |
+
+#### Sample 3
+
+| Input | Ground Truth | LightDepth | Depth Anything V2 |
+|-------|--------------|------------|-------------------|
+| ![Input](docs/images/samples/sample_0002_input.png) | ![GT](docs/images/samples/sample_0002_gt.png) | ![LightDepth](docs/images/samples/sample_0002_lightdepth.png) | ![DAv2](docs/images/samples/sample_0002_dav2.png) |
+
 ## Usage
+
+### Requirements
+
+- Python 3.14
+- PyTorch
+- CUDA-capable GPU (recommended)
+
+### Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/suxrobGM/lightdepth.git
+cd lightdepth
+```
+
+2. Install dependencies either via PDM or pip:
+
+```bash
+# Using PDM (Recommended)
+pdm install
+
+# Or using pip
+pip install -r requirements.txt
+```
+
+> [!NOTE]
+> You can install `pdm` via `pip install pdm` if you don't have it already.
 
 ### Training
 
@@ -151,28 +212,7 @@ pdm compare --checkpoint checkpoints/best_model.pth
 
 ## Configuration
 
-Edit `config.yaml` to change training settings:
-
-```yaml
-# Data settings
-data_root: data/nyu  # Path to NYU Depth v2 dataset
-img_height: 480      # Output and preprocessed image height (pixels)
-img_width: 640       # Output and preprocessed image width (pixels)
-
-# Training settings
-batch_size: 32       # Batch size for training
-num_epochs: 50       # Number of training epochs
-learning_rate: 0.0001  # Learning rate (1e-4)
-
-# System settings
-num_workers: 4       # Number of dataloader workers
-device: cuda         # Device: 'cuda' or 'cpu'
-
-# Resume training 
-resume_from: null  # Path to checkpoint to resume from, or null to start fresh
-
-checkpoint_frequency: 5  # Save checkpoint every 5 epochs (set to 0 to disable)
-```
+Edit `config.yaml` to change training settings. It has well-documented parameters for easy customization.
 
 ## Project Structure
 
@@ -201,60 +241,6 @@ lightdepth/
 ├── requirements.txt     # Python dependencies for pip
 └── pyproject.toml       # Python dependencies for PDM
 ```
-
-## Model Architecture
-
-- **Encoder**: ResNet18 (pretrained on ImageNet)
-- **Decoder**: 4-stage upsampling with skip connections
-- **Channels**: [64, 64, 128, 256, 512] → [256, 128, 64, 32] → 1
-- **Loss**: L1 (Mean Absolute Error)
-- **Metrics**: RMSE, MAE, AbsRel, SqRel
-
-[![Model architecture](docs/images/model_architecture.png)](docs/images/model_architecture.png)
-
-## Results
-
-### Quantitative Comparison
-
-LightDepth vs Depth Anything V2 on NYU Depth v2 test set:
-
-| Metric | LightDepth | Depth Anything V2 | Winner |
-|--------|------------|-------------------|--------|
-| **Parameters** | 14,330,369 | 24,785,089 | **LightDepth (42% fewer)** |
-| **RMSE** ↓ | 2.9477 | 2.8074 | Depth Anything V2 (5.0%) |
-| **MAE** ↓ | 2.6758 | 2.2360 | Depth Anything V2 (19.7%) |
-| **Absolute Relative Error** ↓ | 0.9724 | 1.0272 | **LightDepth (5.3%)** |
-| **Squared Relative Error** ↓ | 2.6063 | 3.7849 | **LightDepth (31.1%)** |
-| **Total Inference Time** ↓ | 5 seconds | 18 seconds | **LightDepth (72.2% faster)** |
-
-**Key Findings:**
-
-- LightDepth achieves competitive performance with 42% fewer parameters
-- Significantly faster inference time (72% improvement)
-- Better performance on relative error metrics
-- Slight trade-off in absolute error metrics (RMSE, MAE)
-
-### Qualitative Results
-
-Sample depth predictions on NYU Depth V2 test set:
-
-#### Sample 1
-
-| Input | Ground Truth | LightDepth | Depth Anything V2 |
-|-------|--------------|------------|-------------------|
-| ![Input](docs/images/samples/sample_0000_input.png) | ![GT](docs/images/samples/sample_0000_gt.png) | ![LightDepth](docs/images/samples/sample_0000_lightdepth.png) | ![DAv2](docs/images/samples/sample_0000_dav2.png) |
-
-#### Sample 2
-
-| Input | Ground Truth | LightDepth | Depth Anything V2 |
-|-------|--------------|------------|-------------------|
-| ![Input](docs/images/samples/sample_0001_input.png) | ![GT](docs/images/samples/sample_0001_gt.png) | ![LightDepth](docs/images/samples/sample_0001_lightdepth.png) | ![DAv2](docs/images/samples/sample_0001_dav2.png) |
-
-#### Sample 3
-
-| Input | Ground Truth | LightDepth | Depth Anything V2 |
-|-------|--------------|------------|-------------------|
-| ![Input](docs/images/samples/sample_0002_input.png) | ![GT](docs/images/samples/sample_0002_gt.png) | ![LightDepth](docs/images/samples/sample_0002_lightdepth.png) | ![DAv2](docs/images/samples/sample_0002_dav2.png) |
 
 ## License
 
