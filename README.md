@@ -75,7 +75,7 @@ You can train the model from scratch or use a pretrained model from the link abo
 
 ```bash
 # Using PDM
-pdm run python scripts/train.py --config config.yaml
+pdm train
 
 # Or directly with Python
 python scripts/train.py --config config.yaml
@@ -94,7 +94,7 @@ Evaluate a trained model on the test set:
 
 ```bash
 # Using PDM
-pdm run python scripts/eval.py --checkpoint checkpoints/best_model.pth --config config.yaml
+pdm eval --checkpoint checkpoints/best_model.pth
 
 # Or directly with Python
 python scripts/eval.py --checkpoint checkpoints/best_model.pth --config config.yaml
@@ -114,7 +114,7 @@ Run inference on a single image:
 
 ```bash
 # Using PDM
-pdm run python scripts/infer.py --checkpoint checkpoints/best_model.pth --input image.png --output depth.png
+pdm infer --checkpoint checkpoints/best_model.pth --input image.png --output depth.png
 
 # Or directly with Python
 python scripts/infer.py --checkpoint checkpoints/best_model.pth --input image.png --output depth.png
@@ -135,7 +135,7 @@ python scripts/infer.py --checkpoint checkpoints/best_model.pth --input image.pn
 Compare LightDepth with Depth Anything V2:
 
 ```bash
-pdm run python scripts/compare.py --config config.yaml --checkpoint checkpoints/best_model.pth
+pdm compare --checkpoint checkpoints/best_model.pth
 ```
 
 > [!NOTE]
